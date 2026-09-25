@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080a0f">
+    <meta name="description" content="CVMatch AI — CV analizi, iş ilanı eşleştirme ve yapay zekâ destekli aday değerlendirme platformu.">
+    <title>CVMatch AI - CV Analiz ve İş İlanı Eşleştirme</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+    (function () {
+        var pref = localStorage.getItem("cvmatch_theme") || "dark";
+        var dark =
+            pref === "dark" ||
+            (pref === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    })();
+    </script>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen">
+    <div class="login-card card">
+        <div class="login-brand"><i class="fas fa-brain"></i> CVMatch <strong>AI</strong></div>
+        <form id="login-form" autocomplete="off">
+            <div class="form-group">
+                <label>Kullanıcı adı</label>
+                <input type="text" id="login-username" required autocomplete="off" placeholder="Kullanıcı adınız">
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <div class="password-input-wrap">
+                    <input type="password" id="login-password" required autocomplete="new-password" placeholder="Şifreniz">
+                    <button type="button" class="password-toggle-btn" data-password-toggle aria-label="Şifreyi göster" tabindex="-1">
+                        <i class="fas fa-eye" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <p id="login-error" class="login-error"></p>
+            <button type="submit" class="btn btn-primary btn-block" id="login-submit-btn"><i class="fas fa-sign-in-alt"></i> Giriş</button>
+            <p class="text-muted" style="font-size:0.8rem;margin-top:0.75rem;text-align:center">
+                <a href="#" id="show-password-reset">Şifremi unuttum</a>
+            </p>
+        </form>
+        <form id="password-reset-form" class="hidden register-form">
+            <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">Kayıtlı e-posta adresinize sıfırlama bağlantısı gönderilir.</p>
+            <div class="form-group">
+                <label>E-posta</label>
+                <input type="email" id="reset-email" autocomplete="email" placeholder="ornek@mail.com">
+            </div>
+            <p id="reset-error" class="login-error"></p>
+            <p id="reset-success" class="text-muted" style="font-size:0.85rem"></p>
+            <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-envelope"></i> Bağlantı gönder</button>
+            <p class="login-toggle text-muted" style="margin-top:0.75rem"><a href="#" id="hide-password-reset">Girişe dön</a></p>
+        </form>
+        <form id="password-reset-confirm-form" class="hidden register-form">
+            <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">E-postanızdaki kodu ve yeni şifrenizi girin.</p>
+            <div class="form-group">
+                <label>Sıfırlama kodu</label>
+                <input type="text" id="reset-token" autocomplete="off" placeholder="E-postadaki uzun kod">
+            </div>
+            <div class="form-group">
+                <label>Yeni şifre</label>
+                <input type="password" id="reset-new-password" minlength="6" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label>Yeni şifre (tekrar)</label>
+                <input type="password" id="reset-new-password2" minlength="6" autocomplete="new-password">
+            </div>
+            <p id="reset-confirm-error" class="login-error"></p>
+            <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-key"></i> Şifreyi kaydet</button>
+        </form>
+        <form id="register-form" class="hidden register-form" novalidate>
+            <div class="reg-tabs reg-tabs-three">
+                <button type="button" class="reg-tab active" id="reg-tab-employee" data-reg-mode="employee">Çalışan</button>
+                <button type="button" class="reg-tab" id="reg-tab-company" data-reg-mode="company">Şirket / departman</button>
+                <button type="button" class="reg-tab" id="reg-tab-consultant" data-reg-mode="consultant">Danışman İK</button>
+            </div>
+            <div id="reg-consultant-info" class="reg-mode-hint hidden">
+                <p class="text-muted">Bağımsız İK danışmanı hesabıdır. Girişten sonra yönetici size erişebileceğiniz şirketleri tanımlar; kendi şirket unvanı oluşturmazsınız.</p>
+            </div>
+            <div class="form-group hidden" id="reg-company-name-wrap">
+                <label>Şirket unvanı *</label>
+                <input type="text" id="reg-company-name" minlength="2" maxlength="200" placeholder="Örn: Acme Teknoloji A.Ş.">
+            </div>
+            <div class="form-group hidden" id="reg-company-access-wrap">
+                <label>Hesap kapsamı</label>
+                <p class="text-muted" style="font-size:0.8rem;margin:0 0 0.5rem">İK tüm departman ve ilanları görür; departman yetkilisi yalnızca kendi departmanı.</p>
+                <label class="checkbox-label" style="display:block;margin-bottom:0.35rem">
+                    <input type="radio" name="reg-company-access" value="hr" checked> İK / insan kaynakları (tüm şirket)
+                </label>
+                <label class="checkbox-label" style="display:block;margin-bottom:0.75rem">
+                    <input type="radio" name="reg-company-access" value="department"> Departman yetkilisi
+                </label>
+                <div class="form-group hidden" id="reg-company-dept-row">
+                    <label>Departman adı *</label>
+                    <input type="text" id="reg-company-department" maxlength="120" placeholder="Örn: Yazılım (şirket unvanıyla birlikte)">
+                    <p class="text-muted" style="font-size:0.75rem;margin:0.35rem 0 0">Kayıt sonrası şirket İK onayı gerekir. Onaylanana kadar giriş yapılamaz.</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Ad Soyad *</label>
+                <input type="text" id="reg-full-name" autocomplete="name" minlength="2" maxlength="120" placeholder="Ad Soyad" required>
+            </div>
+            <div class="form-group">
+                <label id="reg-email-label">E-posta *</label>
+                <input type="email" id="reg-email" autocomplete="email" placeholder="ornek@mail.com" required>
+            </div>
+            <div class="form-group">
+                <label id="reg-phone-label">Telefon (isteğe bağlı)</label>
+                <input type="text" id="reg-phone" autocomplete="tel" placeholder="+90 …">
+            </div>
+            <div class="form-group">
+                <label>Kullanıcı adı</label>
+                <div class="reg-username-wrap">
+                    <input type="text" id="reg-username" autocomplete="username" minlength="3" maxlength="32" placeholder="3–32 karakter">
+                    <span id="reg-username-ok" class="reg-username-ok hidden" aria-hidden="true" title="Kullanılabilir"><i class="fas fa-check-circle"></i></span>
+                </div>
+                <p id="reg-username-hint" class="text-muted reg-username-hint"></p>
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" id="reg-password" autocomplete="new-password" minlength="6" placeholder="En az 6 karakter">
+            </div>
+            <div class="form-group">
+                <label>Şifre (tekrar)</label>
+                <input type="password" id="reg-password2" autocomplete="new-password" minlength="6" placeholder="Tekrar">
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="reg-kvkk">
+                    <span>
+                        Kişisel verilerimin hesabımın oluşturulması, CV ve başvuru süreçlerinin yürütülmesi,
+                        otomatik ve yapay zekâ destekli iş–aday eşleştirmesi ile hizmetin sunulması amacıyla
+                        işlenmesine; kimlik, iletişim, özgeçmiş ve mesleki verilerimin bu kapsamda saklanmasına
+                        <a href="#" class="open-kvkk-modal-link" id="open-kvkk-modal">KVKK aydınlatma metninde</a> açıklanan şartlarda
+                        açık rıza veriyorum. *
+                    </span>
+                </label>
+            </div>
+            <p id="register-error" class="login-error"></p>
+            <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-user-plus"></i> Kayıt ol</button>
+        </form>
+        <p class="login-toggle text-muted">
+            <a href="#" id="show-register">Hesabınız yok mu? Kayıt olun</a>
+            <a href="#" id="show-login" class="hidden">Zaten hesabınız var mı? Giriş</a>
+        </p>
+    </div>
+</div>
+
+<div id="apply-cv-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card card">
+        <div class="modal-head">
+            <h2>Başvuru</h2>
+            <button type="button" class="btn-close" id="close-apply-cv-modal" aria-label="Kapat"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" style="padding:1.25rem">
+            <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">Farklı ilanlar için farklı CV seçebilirsiniz.</p>
+            <div class="form-group">
+                <label>Hangi CV ile başvurulsun?</label>
+                <select id="apply-cv-modal-select"></select>
+            </div>
+            <button type="button" class="btn btn-primary btn-block" id="apply-cv-modal-confirm"><i class="fas fa-paper-plane"></i> Başvur</button>
+        </div>
+    </div>
+</div>
+
+<div id="kvkk-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card card">
+        <div class="modal-head">
+            <h2>KVKK Aydınlatma</h2>
+            <button type="button" class="btn-close" id="close-kvkk-modal" aria-label="Kapat"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body kvkk-modal-scroll" id="kvkk-modal-body"></div>
+    </div>
+</div>
+
+<div class="app hidden" id="main-app">
+
+    
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <i class="fas fa-brain"></i>
+            <span class="logo-text">CVMatch <strong>AI</strong></span>
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Menüyü Aç/Kapat">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-profile">
+            <div class="profile-avatar" id="sidebar-profile-avatar">
+                <img id="sidebar-avatar-img" class="profile-avatar-img hidden" alt="">
+                <i class="fas fa-user" id="sidebar-avatar-fallback"></i>
+            </div>
+            <div class="profile-info">
+                <span class="profile-name">Kullanıcı</span>
+                <span class="profile-role">Yönetici</span>
+            </div>
+        </div>
+
+        <div id="sidebar-company-switch-wrap" class="sidebar-company-switch hidden">
+            <label for="sidebar-active-company" class="sidebar-company-switch-label">Sorumlu şirket</label>
+            <select id="sidebar-active-company" class="sidebar-company-select" aria-label="Sorumlu şirket"></select>
+        </div>
+
+        <nav>
+            <a href="#" class="nav-link active" data-page="dashboard">
+                <i class="fas fa-home"></i> <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-link" data-page="jobs-browse" data-employee-only style="display:none">
+                <i class="fas fa-search"></i> <span>İş İlanları</span>
+            </a>
+            <a href="#" class="nav-link" data-page="employee-applications" data-employee-only style="display:none">
+                <i class="fas fa-paper-plane"></i> <span>Başvurularım</span>
+            </a>
+            <a href="#" class="nav-link" data-page="employee-interviews" data-employee-only style="display:none">
+                <i class="fas fa-calendar-alt"></i> <span>Mülakatlarım</span>
+            </a>
+            <a href="#" class="nav-link" data-page="employee-cv" data-employee-only style="display:none">
+                <i class="fas fa-edit"></i> <span>CV Hazırla</span>
+            </a>
+            <a href="#" class="nav-link" data-page="job-applicants" data-company-only>
+                <i class="fas fa-users"></i> <span>Başvurular &amp; CV</span>
+            </a>
+            <a href="#" class="nav-link" data-page="admin" data-admin-only style="display:none">
+                <i class="fas fa-shield-alt"></i> <span>Admin</span>
+            </a>
+            <a href="#" class="nav-link nav-link-sub" id="nav-admin-applications" data-admin-only style="display:none" onclick="event.preventDefault();openAdminApplicationsSection()">
+                <i class="fas fa-inbox"></i> <span>Tüm başvurular</span>
+            </a>
+            <a href="#" class="nav-link" data-page="job" data-company-only>
+                <i class="fas fa-briefcase"></i> <span>İş İlanları</span>
+            </a>
+            <a href="#" class="nav-link" data-page="match" data-company-only>
+                <i class="fas fa-search"></i> <span>Eşleştirme</span>
+            </a>
+            <a href="#" class="nav-link" data-page="compare" data-company-only>
+                <i class="fas fa-balance-scale"></i> <span>Karşılaştırma</span>
+            </a>
+            <a href="#" class="nav-link" data-page="rag" data-company-only>
+                <i class="fas fa-robot"></i> <span>Soru-Cevap</span>
+            </a>
+            <a href="#" class="nav-link" data-page="candidate-filter" data-company-only>
+                <i class="fas fa-filter"></i> <span>Aday Filtreleme</span>
+            </a>
+            <a href="#" class="nav-link" data-page="interview-scheduler" data-company-only>
+                <i class="fas fa-calendar-alt"></i> <span>Mülakat Planlayıcı</span>
+            </a>
+            <a href="#" class="nav-link" data-page="application-tracking" data-employee-only style="display:none">
+                <i class="fas fa-chart-line"></i> <span>Başvuru Takip</span>
+            </a>
+            <a href="#" class="nav-link" data-page="messages" data-messaging-only style="display:none">
+                <i class="fas fa-comments"></i> <span>Mesajlar</span>
+                <span class="notif-badge hidden" id="sidebar-messages-badge" aria-live="polite">0</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button type="button" class="sidebar-footer-item" id="sidebar-theme-btn" title="Koyu / Açık mod" aria-label="Görünüm">
+                <i class="fas fa-moon" id="sidebar-theme-icon"></i>
+                <span class="sidebar-footer-item-text" id="sidebar-theme-label">Koyu mod</span>
+            </button>
+            <button type="button" class="sidebar-footer-item" id="sidebar-notifications-btn" style="display:none" title="Bildirimler">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge hidden" id="sidebar-notif-badge" aria-live="polite">0</span>
+                <span class="sidebar-footer-item-text">Bildirimler</span>
+            </button>
+            <a href="#" class="sidebar-footer-link sidebar-footer-link--settings" id="sidebar-settings-btn" style="display:none">
+                <i class="fas fa-cog"></i> <span>Ayarlar</span>
+            </a>
+            <a href="#" class="sidebar-footer-link sidebar-footer-link--logout" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> <span>Çıkış</span>
+            </a>
+        </div>
+        <div id="notif-dropdown" class="notif-dropdown hidden" role="dialog" aria-label="Bildirimler" aria-modal="true">
+            <div class="notif-dropdown-head">
+                <div class="notif-dropdown-head-main">
+                    <span class="notif-dropdown-icon" aria-hidden="true"><i class="fas fa-bell"></i></span>
+                    <div>
+                        <h3 class="notif-dropdown-title">Bildirimler</h3>
+                        <p class="notif-dropdown-sub">Başvuru, mesaj ve durum güncellemeleri</p>
+                    </div>
+                </div>
+                <button type="button" class="notif-dropdown-close" id="notif-dropdown-close" aria-label="Kapat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="notif-dropdown-body" class="notif-dropdown-body"></div>
+        </div>
+    </aside>
+
+    
+    <main class="content">
+
+        
+        <section id="page-dashboard" class="page active">
+            <div class="page-header">
+                <h1>Dashboard</h1>
+            </div>
+            <div id="dashboard-alerts" class="dashboard-alerts hidden" aria-live="polite"></div>
+
+            <div class="stats-grid stats-grid-4" id="dashboard-stats-grid">
+                <button type="button" class="stat-card stat-card-clickable" data-stat-index="0">
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-value" id="stat-cvs">0</div>
+                    <div class="stat-label" id="stat-label-1">Yüklenen CV</div>
+                </button>
+                <button type="button" class="stat-card stat-card-clickable" data-stat-index="1">
+                    <div class="stat-icon"><i class="fas fa-briefcase"></i></div>
+                    <div class="stat-value" id="stat-jobs">0</div>
+                    <div class="stat-label" id="stat-label-2">İş İlanı</div>
+                </button>
+                <button type="button" class="stat-card stat-card-clickable" data-stat-index="2">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-value" id="stat-matches">0</div>
+                    <div class="stat-label" id="stat-label-3">Eşleştirme</div>
+                </button>
+                <button type="button" class="stat-card stat-card-clickable" data-stat-index="3">
+                    <div class="stat-icon stat-icon-avg"><i class="fas fa-bullseye"></i></div>
+                    <div class="stat-value" id="stat-avg">-</div>
+                    <div class="stat-label" id="stat-label-4">Ort. Uyum Puanı</div>
+                </button>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h2><i class="fas fa-rocket"></i> Hızlı Başlangıç</h2>
+                    <div class="steps">
+                        <div class="step step-clickable" id="dash-step-1" title="1. adım">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3 id="dash-step-1-title">CV</h3>
+                            </div>
+                        </div>
+                        <div class="step step-clickable" id="dash-step-2" title="2. adım">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3 id="dash-step-2-title">İş İlanı</h3>
+                            </div>
+                        </div>
+                        <div class="step step-clickable" id="dash-step-3" title="3. adım">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3 id="dash-step-3-title">Eşleştir</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" data-company-only>
+                    <h2><i class="fas fa-chart-pie"></i> En Çok Bulunan Beceriler</h2>
+                    <div id="top-skills-chart-container">
+                        <canvas id="top-skills-chart"></canvas>
+                    </div>
+                    <div id="top-skills-empty" class="text-muted" style="text-align:center;padding:2rem">Veri yok</div>
+                </div>
+                <div class="card" data-employee-only style="display:none">
+                    <h2><i class="fas fa-bolt"></i> Kısayollar</h2>
+                    <div class="emp-dash-buttons">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="navigate('jobs-browse')"><i class="fas fa-search"></i> İlanlar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="navigate('employee-applications')"><i class="fas fa-paper-plane"></i> Başvurularım</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="navigate('employee-cv')"><i class="fas fa-edit"></i> CV</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="navigate('messages')"><i class="fas fa-comments"></i> Mesajlar</button>
+                    </div>
+                </div>
+                <div class="card" data-admin-only style="display:none">
+                    <h2><i class="fas fa-shield-alt"></i> Admin</h2>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="navigate('admin')"><i class="fas fa-cog"></i> Yönetim</button>
+                </div>
+            </div>
+
+            <div class="card" data-company-only>
+                <h2><i class="fas fa-history"></i> Son Eşleştirmeler</h2>
+                <div id="recent-activity">
+                    <p class="text-muted">Kayıt yok</p>
+                </div>
+            </div>
+            <div class="card" data-company-only>
+                <h2><i class="fas fa-inbox"></i> Son Başvurular</h2>
+                <div id="recent-applications"><p class="text-muted">Yükleniyor…</p></div>
+            </div>
+            <div class="card" data-employee-only style="display:none">
+                <h2><i class="fas fa-paper-plane"></i> Son Başvurularım</h2>
+                <div id="employee-recent-activity"><p class="text-muted">Yükleniyor…</p></div>
+            </div>
+            <div class="card" data-admin-only style="display:none">
+                <h2><i class="fas fa-shield-alt"></i> Son Sistem Olayları</h2>
+                <div id="admin-dashboard-activity"><p class="text-muted">Yükleniyor…</p></div>
+            </div>
+        </section>
+
+        <section id="page-employee-cv" class="page page--narrow">
+            <div class="page-header">
+                <h1>CV Hazırla</h1>
+            </div>
+            <div id="kvkk-revoked-banner" class="kvkk-banner hidden" role="alert"></div>
+            <div class="card employee-cv-card">
+                <form id="employee-cv-form" class="emp-cv-form-main" novalidate>
+                    <div class="form-group emp-cv-version-row">
+                        <label>Kayıtlı CV</label>
+                        <select id="emp-cv-edit-select">
+                            <option value="">— Yeni CV oluştur —</option>
+                        </select>
+                        <p class="text-muted" style="font-size:0.75rem;margin:0.35rem 0 0">Farklı ilanlar için ayrı CV kaydedebilirsiniz; başvururken listeden seçin.</p>
+                    </div>
+                    <div id="emp-cv-analysis" class="emp-cv-analysis card-inner hidden"></div>
+
+                    <div class="emp-flow-step">
+                        <h2 class="emp-section-title"><span class="emp-step-num">1</span> Profil</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Ad Soyad</label>
+                                <input type="text" id="emp-full-name" placeholder="Ad Soyad">
+                            </div>
+                            <div class="form-group">
+                                <label>E-posta</label>
+                                <input type="email" id="emp-email" placeholder="ornek@eposta.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Telefon</label>
+                                <input type="text" id="emp-phone" placeholder="+90 …">
+                            </div>
+                            <div class="form-group">
+                                <label>Şehir</label>
+                                <input type="text" id="emp-city" maxlength="80" placeholder="Örn: İstanbul">
+                            </div>
+                            <div class="form-group">
+                                <label>İlçe</label>
+                                <input type="text" id="emp-district" maxlength="80" placeholder="Örn: Kadıköy">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Profesyonel özet (isteğe bağlı)</label>
+                            <textarea id="emp-summary" rows="3" placeholder="2–4 cümle: uzmanlık alanınız ve hedefiniz"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="emp-flow-step">
+                        <h2 class="emp-section-title"><span class="emp-step-num">2</span> İş deneyimi</h2>
+                        <div id="emp-exp-list" class="emp-entry-list"></div>
+                        <button type="button" class="btn btn-sm btn-secondary emp-add-exp emp-add-block-btn">
+                            <i class="fas fa-plus"></i> Pozisyon kartı ekle
+                        </button>
+                    </div>
+
+                    <div class="emp-flow-step">
+                        <h2 class="emp-section-title"><span class="emp-step-num">3</span> Eğitim</h2>
+                        <div id="emp-edu-list" class="emp-entry-list"></div>
+                        <button type="button" class="btn btn-sm btn-secondary emp-add-edu emp-add-block-btn">
+                            <i class="fas fa-plus"></i> Eğitim kartı ekle
+                        </button>
+                    </div>
+
+                    <div class="emp-flow-step">
+                        <h2 class="emp-section-title"><span class="emp-step-num">4</span> Yetenekler ve diller</h2>
+                        <div class="form-group">
+                            <label>Beceriler</label>
+                            <div class="tag-input-container">
+                                <div class="tag-list" id="emp-skills-tags"></div>
+                                <input type="text" class="tag-input" id="emp-skills-input" placeholder="Örn: SQL, Proje yönetimi, Excel">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Yabancı diller</label>
+                            <div id="emp-lang-list" class="emp-entry-list"></div>
+                            <button type="button" class="btn btn-sm btn-secondary emp-add-lang emp-add-block-btn">
+                                <i class="fas fa-plus"></i> Dil satırı ekle
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="emp-flow-step">
+                        <h2 class="emp-section-title"><span class="emp-step-num">5</span> Referanslar</h2>
+                        <div id="emp-ref-list" class="emp-entry-list"></div>
+                        <button type="button" class="btn btn-sm btn-secondary emp-add-ref emp-add-block-btn">
+                            <i class="fas fa-plus"></i> Referans ekle
+                        </button>
+                    </div>
+
+                    <div class="emp-flow-step">
+                        <h2 class="emp-section-title"><span class="emp-step-num">6</span> Sertifikalar (isteğe bağlı)</h2>
+                        <div class="form-group">
+                            <div class="tag-input-container">
+                                <div class="tag-list" id="emp-certs-tags"></div>
+                                <input type="text" class="tag-input" id="emp-certs-input" placeholder="Örn: AWS, PMP, İleri Excel">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="emp-flow-step emp-flow-step--optional">
+                        <h2 class="emp-section-title"><span class="emp-step-num">+</span> PDF (isteğe bağlı)</h2>
+                        <div class="form-group">
+                            <input type="file" id="emp-pdf" accept=".pdf">
+                        </div>
+                    </div>
+
+                    <div class="form-group emp-kvkk-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="emp-kvkk" required>
+                            <span>Kişisel verilerimin CV oluşturma, analiz ve başvuru süreçlerinde işlenmesine ilişkin <a href="#" class="open-kvkk-modal-link">KVKK metnini</a> okudum ve onaylıyorum. *</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary emp-submit-btn">
+                        <i class="fas fa-paper-plane"></i> Kaydet ve analiz et
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <template id="emp-exp-template">
+            <div class="emp-entry-card" data-emp-entry="exp">
+                <div class="emp-entry-head">
+                    <span>İş deneyimi</span>
+                    <button type="button" class="btn btn-sm btn-ghost emp-remove-entry" title="Kaldır"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Pozisyon / Unvan</label>
+                        <input type="text" class="js-exp-title" placeholder="Örn: Yazılım geliştirici">
+                    </div>
+                    <div class="form-group">
+                        <label>Şirket / Kurum</label>
+                        <input type="text" class="js-exp-company" placeholder="Şirket adı">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Başlangıç</label>
+                        <input type="text" class="js-exp-start" placeholder="Örn: 01/2020">
+                    </div>
+                    <div class="form-group">
+                        <label>Bitiş</label>
+                        <input type="text" class="js-exp-end" placeholder="Boş bırakılabilir">
+                    </div>
+                    <div class="form-group emp-checkbox-wrap">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="js-exp-current"> Hâlâ çalışıyorum
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Görevler / başarılar</label>
+                    <textarea class="js-exp-desc" rows="3" placeholder="Kısa madde veya paragraf"></textarea>
+                </div>
+            </div>
+        </template>
+
+        <template id="emp-edu-template">
+            <div class="emp-entry-card" data-emp-entry="edu">
+                <div class="emp-entry-head">
+                    <span>Eğitim</span>
+                    <button type="button" class="btn btn-sm btn-ghost emp-remove-entry" title="Kaldır"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Okul / Kurum</label>
+                        <input type="text" class="js-edu-inst" placeholder="Üniversite adı">
+                    </div>
+                    <div class="form-group">
+                        <label>Bölüm / Alan</label>
+                        <input type="text" class="js-edu-field" placeholder="Örn: Bilgisayar Mühendisliği">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Derece</label>
+                        <input type="text" class="js-edu-degree" placeholder="Lisans, Yüksek lisans…">
+                    </div>
+                    <div class="form-group">
+                        <label>Mezuniyet yılı</label>
+                        <input type="text" class="js-edu-year" placeholder="Örn: 2022">
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="emp-lang-template">
+            <div class="emp-entry-card emp-entry-card--compact" data-emp-entry="lang">
+                <div class="emp-entry-head">
+                    <span>Dil</span>
+                    <button type="button" class="btn btn-sm btn-ghost emp-remove-entry" title="Kaldır"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Dil</label>
+                        <input type="text" class="js-lang-name" placeholder="Örn: İngilizce">
+                    </div>
+                    <div class="form-group">
+                        <label>Seviye</label>
+                        <select class="js-lang-level">
+                            <option value="">Seçin</option>
+                            <option>Başlangıç</option>
+                            <option>Orta</option>
+                            <option>İleri</option>
+                            <option>Ana dil</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="emp-ref-template">
+            <div class="emp-entry-card" data-emp-entry="ref">
+                <div class="emp-entry-head">
+                    <span>Referans</span>
+                    <button type="button" class="btn btn-sm btn-ghost emp-remove-entry" title="Kaldır"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ad soyad</label>
+                        <input type="text" class="js-ref-name" placeholder="Referans adı">
+                    </div>
+                    <div class="form-group">
+                        <label>Ünvan</label>
+                        <input type="text" class="js-ref-title" placeholder="Örn: İK Müdürü">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Şirket</label>
+                        <input type="text" class="js-ref-company" placeholder="Kurum adı">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon</label>
+                        <input type="text" class="js-ref-phone" placeholder="+90 …">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>E-posta</label>
+                    <input type="email" class="js-ref-email" placeholder="ornek@firma.com">
+                </div>
+            </div>
+        </template>
+
+        <section id="page-employee-applications" class="page page--narrow">
+            <div class="page-header">
+                <h1>Başvurularım</h1>
+            </div>
+            <div class="card employee-applications-card">
+                <div class="employee-applications-toolbar">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="navigate('jobs-browse')"><i class="fas fa-search"></i> İlanlar</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="navigate('employee-cv')"><i class="fas fa-edit"></i> CV</button>
+                </div>
+                <div id="employee-applications-body"><p class="text-muted">Yükleniyor…</p></div>
+            </div>
+        </section>
+
+        <section id="page-jobs-browse" class="page">
+            <div class="page-header">
+                <h1>İş İlanları</h1>
+            </div>
+            <div class="card jobs-browse-toolbar">
+                <div class="jobs-browse-toolbar-row">
+                    <div class="pill-tabs" id="jobs-browse-filter-tabs" role="tablist">
+                        <button type="button" class="pill-tab active" data-job-filter="all">Tüm ilanlar</button>
+                        <button type="button" class="pill-tab" data-job-filter="favorites">Favorilerim</button>
+                    </div>
+                    <div class="jobs-browse-search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="search" id="jobs-browse-search" placeholder="Ara" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+            <div class="card-grid" id="jobs-browse-list"></div>
+            <div id="jobs-browse-pagination" class="list-pagination hidden"></div>
+        </section>
+
+        <section id="page-job-applicants" class="page">
+            <div class="page-header page-header-applicants">
+                <h1>Başvurular</h1>
+            </div>
+            <div class="applicants-hub">
+                <aside class="card applicants-hub-nav">
+                    <div class="applicants-nav-head">
+                        <h2 class="applicants-nav-title"><i class="fas fa-building"></i> Şirket → departman → ilan</h2>
+                    </div>
+                    <div class="applicants-nav-search">
+                        <label class="applicants-nav-search-label" for="job-applicants-job-filter">İlan ara</label>
+                        <div class="applicants-nav-search-wrap" role="search">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            <input type="search" id="job-applicants-job-filter" placeholder="İlan, departman veya lokasyon" autocomplete="off" enterkeyhint="search">
+                        </div>
+                    </div>
+                    <div id="job-applicants-dept-tree" class="dept-tree"></div>
+                </aside>
+                <div class="applicants-hub-main">
+                    <div id="job-applicants-active-head" class="applicants-active-head hidden"></div>
+                    <div id="job-applicants-body" class="applicants-body"></div>
+                </div>
+            </div>
+            <details class="card company-archive-details" id="company-archive-details" data-company-hr-only>
+                <summary><i class="fas fa-file-pdf"></i> Harici PDF CV yükle (isteğe bağlı)</summary>
+                <p class="text-muted company-archive-hint"><strong>Ne işe yarar?</strong> Aday panelinden CV oluşturmadan, elinizdeki PDF özgeçmişleri şirket arşivine eklersiniz. Yüklenen CV’ler analiz edilir; soldaki ilan ağacından ilgili ilanı seçip başvuruları görüntüleyebilir, eşleştirme / soru-cevap / mesaj için kullanabilirsiniz. Aday hesabı oluşturmaz — yalnızca sizin şirket içi CV havuzunuzdur.</p>
+                <div class="company-archive-inner">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="cv-kvkk-consent" style="margin-top:0.2rem">
+                        <span>Kişisel verilerin işlenmesine ilişkin <a href="#" class="open-kvkk-modal-link">KVKK metnini</a> okudum ve onaylıyorum.</span>
+                    </label>
+                    <div class="upload-area upload-area-compact" id="cv-upload-area">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>PDF</h3>
+                        <p>Sürükle veya tıkla</p>
+                        <input type="file" id="cv-file-input" accept=".pdf" hidden>
+                    </div>
+                    <div style="margin:0.75rem 0;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap">
+                        <div style="display:flex;align-items:center;gap:0.5rem">
+                            <label class="checkbox-label" style="margin:0;display:flex;align-items:center;gap:0.5rem">
+                                <input type="checkbox" id="blind-mode-toggle" onchange="toggleBlindMode()">
+                                <span><i class="fas fa-eye-slash"></i> Kör CV Modu (Bias Önleme)</span>
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="reanalyzeAllCVs()">
+                            <i class="fas fa-sync-alt"></i> Yeniden analiz
+                        </button>
+                    </div>
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="cv-search" placeholder="Arşivde ara">
+                        <span class="search-count" id="cv-search-count"></span>
+                    </div>
+                    <div class="card-grid card-grid-archive" id="cv-list"></div>
+                </div>
+            </details>
+            <div id="cv-detail" class="detail-panel hidden"></div>
+        </section>
+
+        <section id="page-settings" class="page page--narrow">
+            <div class="page-header">
+                <h1>Ayarlar</h1>
+            </div>
+            <div class="settings-grid">
+                <div class="card settings-card">
+                    <h2><i class="fas fa-user"></i> Hesap</h2>
+                    <div class="form-group settings-avatar-block">
+                        <label>Profil fotoğrafı</label>
+                        <div class="settings-avatar-row">
+                            <div class="settings-avatar-preview" id="settings-avatar-preview-wrap">
+                                <img id="settings-avatar-preview-img" class="hidden" alt="">
+                                <i class="fas fa-user" id="settings-avatar-preview-icon"></i>
+                            </div>
+                            <div class="settings-avatar-actions">
+                                <input type="file" id="settings-avatar-input" accept="image/jpeg,image/png,image/webp" hidden>
+                                <button type="button" class="btn btn-secondary btn-sm" id="settings-avatar-pick"><i class="fas fa-image"></i> Yükle</button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="settings-avatar-camera"><i class="fas fa-camera"></i> Çek</button>
+                                <button type="button" class="btn btn-primary btn-sm" id="settings-avatar-upload" disabled><i class="fas fa-check"></i> Kaydet</button>
+                                <button type="button" class="btn btn-ghost btn-sm" id="settings-avatar-remove"><i class="fas fa-trash"></i> Kaldır</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Kullanıcı adı</label>
+                        <input type="text" id="settings-username" readonly autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label>Ad soyad</label>
+                        <input type="text" id="settings-full-name" maxlength="120" autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label>E-posta</label>
+                        <input type="email" id="settings-email" maxlength="120" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon</label>
+                        <input type="text" id="settings-phone" maxlength="40" autocomplete="tel">
+                    </div>
+                    <div class="form-group" id="settings-company-fields" data-company-only style="display:none">
+                        <label>Şirket unvanı</label>
+                        <input type="text" id="settings-company-name" maxlength="200" autocomplete="organization">
+                    </div>
+                    <div class="form-group" id="settings-dept-field" data-company-only style="display:none">
+                        <label>Departman / ekip (profil)</label>
+                        <input type="text" id="settings-department" maxlength="120" placeholder="İnceleyici listelerinde görünür">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="settings-save-profile"><i class="fas fa-save"></i> Hesabı kaydet</button>
+                </div>
+                <div class="card settings-card">
+                    <h2><i class="fas fa-palette"></i> Görünüm</h2>
+                    <div class="form-group">
+                        <label for="settings-theme">Tema</label>
+                        <select id="settings-theme" class="form-control">
+                            <option value="dark">Koyu mod</option>
+                            <option value="light">Açık mod</option>
+                            <option value="system">Sistem (otomatik)</option>
+                        </select>
+                        <p class="text-muted" style="font-size:0.75rem;margin:0.35rem 0 0">Kenar çubuğundan da Koyu / Açık mod arasında geçebilirsiniz.</p>
+                    </div>
+                </div>
+                <div class="card settings-card">
+                    <h2><i class="fas fa-bell"></i> Bildirimler</h2>
+                    <p class="text-muted" style="font-size:0.85rem;margin:0 0 0.75rem">Sol alttaki zil simgesinden uygulama içi bildirimlere bakın (başvuru, mesaj).</p>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="settings-notify-email" checked>
+                            <span>Ayrıca e-posta bildirimi gönder</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="card settings-card org-guide-card" data-company-only style="display:none" id="settings-org-guide-card">
+                    <h2><i class="fas fa-sitemap"></i> Hesap yapısı</h2>
+                    <div class="org-guide-body text-muted">
+                        <p><strong>Şirket (kiracı)</strong> — Her kayıt bir şirket oluşturur. Tüm ilanlar, başvurular ve mesajlar bu şirket altında toplanır.</p>
+                        <p><strong>İK hesabı</strong> — Şirketin tüm departmanları, ilanları ve başvurularını görür; departman yetkilisi ekleyebilir; şirket iletişim bilgilerini düzenler.</p>
+                        <p><strong>Departman yetkilisi</strong> — Yalnızca kendi departmanındaki ilan ve başvuruları görür. Aynı şirkette birden fazla departman hesabı olabilir.</p>
+                        <p><strong>Danışman İK</strong> — Birden fazla şirketi yönetir; kayıtta şirket unvanı oluşturmaz. Yönetici (admin) hangi şirketlere erişeceğinizi tanımlar.</p>
+                        <p><strong>Kayıt türleri</strong> — Giriş ekranında: Çalışan · Şirket/departman (İK veya departman yetkilisi) · Danışman İK.</p>
+                        <p style="margin-bottom:0"><strong>Çalışan</strong> — Kişisel CV ve başvurular; şirketlerle mesajlaşma.</p>
+                    </div>
+                </div>
+                <div class="card settings-card" data-company-hr-only style="display:none" id="settings-managed-companies-card">
+                    <h2><i class="fas fa-building"></i> Sorumlu olduğunuz şirketler</h2>
+                    <p class="text-muted" style="font-size:0.85rem;margin:0 0 0.75rem">İK hesabınızın yönettiği şirketler. Birden fazla şirket varsa sol menüden aktif şirketi seçebilirsiniz.</p>
+                    <div id="settings-managed-companies-list" class="settings-managed-companies-list"></div>
+                    <div id="settings-add-managed-company" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+                        <div class="form-group">
+                            <label>Yeni Şirket Ekle</label>
+                            <select id="settings-add-company-select" class="form-control">
+                                <option value="">Seçiniz</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;gap:0.5rem">
+                            <button class="btn btn-primary btn-sm" onclick="addManagedCompanyFromSettings()">Doğrudan Ekle</button>
+                            <button class="btn btn-secondary btn-sm" onclick="sendCompanyManagementRequestFromSettings()">İstek Gönder</button>
+                        </div>
+                        <p class="text-muted" style="font-size:0.75rem;margin-top:0.5rem">"Doğrudan Ekle": Hedef şirket onayı olmadan ekler. "İstek Gönder": Hedef şirketten onay bekler.</p>
+                    </div>
+                    <div id="settings-create-new-company" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+                        <h3 style="font-size:1rem;margin-bottom:0.5rem">Yeni Şirket Oluştur</h3>
+                        <p class="text-muted" style="font-size:0.8rem;margin-bottom:0.5rem">Sistemde olmayan yeni bir şirket oluşturun ve yönetiminize ekleyin.</p>
+                        <div class="form-group">
+                            <label>Şirket Adı *</label>
+                            <input type="text" id="new-company-name" class="form-control" placeholder="Şirket unvanı">
+                        </div>
+                        <div class="form-group">
+                            <label>E-posta</label>
+                            <input type="email" id="new-company-email" class="form-control" placeholder="info@sirket.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefon</label>
+                            <input type="text" id="new-company-phone" class="form-control" placeholder="+90 ...">
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="createNewCompanyForConsultant()">Oluştur ve Ekle</button>
+                    </div>
+                </div>
+                <div class="card settings-card" data-company-hr-only style="display:none" id="settings-pending-registrations-card">
+                    <h2><i class="fas fa-user-clock"></i> Onay bekleyen departman kayıtları</h2>
+                    <p class="text-muted" style="font-size:0.85rem;margin:0 0 0.75rem">Mevcut şirketinize departman yetkilisi olarak kayıt olan kullanıcıları onaylayın veya reddedin.</p>
+                    <div id="settings-pending-registrations-list"></div>
+                </div>
+                <div class="card settings-card" data-company-hr-only style="display:none" id="settings-company-profile-card">
+                    <h2><i class="fas fa-building"></i> Şirket iletişim bilgileri</h2>
+                    <p class="info-banner">Bu bilgiler açık ilanlarda adaylara gösterilir: adres, e-posta, telefon ve web sitesi.</p>
+                    <div class="form-group">
+                        <label>E-posta (şirket)</label>
+                        <input type="email" id="settings-co-email" maxlength="120" placeholder="ik@sirket.com" autocomplete="organization-email">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon</label>
+                        <input type="text" id="settings-co-phone" maxlength="40" placeholder="+90 …" autocomplete="organization-tel">
+                    </div>
+                    <div class="form-group">
+                        <label>Adres</label>
+                        <textarea id="settings-co-address" rows="2" maxlength="500" placeholder="Açık adres"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Web sitesi</label>
+                        <input type="url" id="settings-co-website" maxlength="200" placeholder="https://sirket.com">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="settings-save-company-profile"><i class="fas fa-save"></i> Şirket bilgilerini kaydet</button>
+                </div>
+                <div class="card settings-card" data-company-hr-only style="display:none">
+                    <h2><i class="fas fa-users"></i> Şirket ekibi</h2>
+                    <p class="text-muted" style="font-size:0.8rem;margin-bottom:0.75rem">İK hesabıyla aynı şirket için departman yetkilisi veya ikinci bir İK kullanıcısı ekleyebilirsiniz. Birden fazla şirket yönetiyorsanız hedef şirketi seçin.</p>
+                    <div id="settings-team-list"></div>
+                    <hr style="margin:1.25rem 0;opacity:0.35;border:0;border-top:1px solid currentColor">
+                    <h3 style="font-size:1rem;margin-bottom:0.75rem">Yeni şirket kullanıcısı</h3>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+                        <div class="form-group" style="margin:0">
+                            <label>Kullanıcı adı</label>
+                            <input type="text" id="settings-new-team-username" maxlength="32" autocomplete="off" placeholder="3–32 karakter">
+                        </div>
+                        <div class="form-group" style="margin:0">
+                            <label>Şifre</label>
+                            <input type="password" id="settings-new-team-password" minlength="6" autocomplete="new-password">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ad soyad</label>
+                        <input type="text" id="settings-new-team-fullname" maxlength="120">
+                    </div>
+                    <div class="form-group">
+                        <label>E-posta</label>
+                        <input type="email" id="settings-new-team-email" maxlength="120">
+                    </div>
+                    <div class="form-group">
+                        <label>Erişim</label>
+                        <label class="checkbox-label" style="display:block;margin-bottom:0.25rem">
+                            <input type="radio" name="settings-new-team-access" value="department" checked> Departman yetkilisi
+                        </label>
+                        <label class="checkbox-label" style="display:block">
+                            <input type="radio" name="settings-new-team-access" value="hr"> İK (tüm şirket)
+                        </label>
+                    </div>
+                    <div class="form-group hidden" id="settings-new-team-company-wrap">
+                        <label>Hangi şirket için? *</label>
+                        <select id="settings-new-team-target-company" aria-label="Hedef şirket"></select>
+                        <p class="text-muted" style="font-size:0.75rem;margin:0.35rem 0 0">Birden fazla şirketiniz varsa departman / İK hesabı hangi şirkete bağlanacaksa seçin.</p>
+                    </div>
+                    <div class="form-group" id="settings-new-team-dept-wrap">
+                        <label>Departman adı *</label>
+                        <input type="text" id="settings-new-team-dept" maxlength="120" placeholder="Örn: Satış — İstanbul (şirket adıyla birlikte yazabilirsiniz)">
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="settings-team-kvkk">
+                            <span>Kişisel verilerin işlenmesine ilişkin <a href="#" class="open-kvkk-modal-link">KVKK metnini</a> okudum, yeni kullanıcı adına onaylıyorum. *</span>
+                        </label>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="settings-add-team-member"><i class="fas fa-user-plus"></i> Kullanıcı oluştur</button>
+                </div>
+                <div class="card settings-card">
+                    <h2><i class="fas fa-key"></i> Şifre</h2>
+                    <div class="form-group">
+                        <label>Mevcut şifre</label>
+                        <input type="password" id="settings-pw-current" autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label>Yeni şifre</label>
+                        <input type="password" id="settings-pw-new" autocomplete="new-password" minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>Yeni şifre (tekrar)</label>
+                        <input type="password" id="settings-pw-new2" autocomplete="new-password" minlength="6">
+                    </div>
+                    <p class="text-muted" style="font-size:0.8rem;margin-bottom:0.75rem">Şifre değişince oturum kapanır; yeni şifreyle giriş yapın.</p>
+                    <button type="button" class="btn btn-secondary" id="settings-save-password"><i class="fas fa-lock"></i> Şifreyi güncelle</button>
+                </div>
+                <div class="card settings-card settings-card--danger">
+                    <h2><i class="fas fa-user-slash"></i> Hesap</h2>
+                    <p class="text-muted" style="font-size:0.85rem">Hesabınızı silerseniz CV ve başvurularınız kalıcı olarak kaldırılır (aday hesabı).</p>
+                    <button type="button" class="btn btn-danger btn-sm" id="settings-delete-account"><i class="fas fa-trash"></i> Hesabımı sil</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-admin" class="page">
+            <div class="page-header">
+                <h1>Yönetim</h1>
+            </div>
+            <div class="stats-grid" id="admin-stats-grid" style="margin-bottom:1.25rem"></div>
+            <div class="card">
+                <h2>Son işlemler (denetim)</h2>
+                <div id="admin-audit-list" class="text-muted" style="font-size:0.85rem">Yükleniyor…</div>
+            </div>
+            <div class="card">
+                <h2>KVKK metni (HTML)</h2>
+                <div class="form-group">
+                    <label>Sürüm</label>
+                    <input type="text" id="admin-kvkk-version" placeholder="örn: 1.1">
+                </div>
+                <div class="form-group">
+                    <textarea id="admin-kvkk-html" rows="12"></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" id="admin-save-kvkk"><i class="fas fa-save"></i> Kaydet</button>
+            </div>
+            <div class="card">
+                <h2>Kullanıcılar</h2>
+                <div id="admin-users-list"></div>
+            </div>
+            <div class="card">
+                <h2>İK — birden fazla şirket</h2>
+                <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">Aynı İK kullanıcısının birden çok şirket kaydına erişmesi. Yalnızca İK (insan kaynakları) hesapları için geçerlidir.</p>
+                <div class="form-group">
+                    <label>İK kullanıcı adı</label>
+                    <input type="text" id="admin-managed-username" maxlength="32" autocomplete="off" placeholder="örn: ik_demo">
+                </div>
+                <div class="form-group">
+                    <label>Erişilecek şirketler (Ctrl/Cmd ile çoklu seçim)</label>
+                    <select id="admin-managed-companies" multiple size="8" style="min-height:10rem;width:100%"></select>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="admin-save-managed-companies"><i class="fas fa-save"></i> Şirket erişimini kaydet</button>
+            </div>
+            <div class="card">
+                <h2>İş ilanları (tüm şirketler)</h2>
+                <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">Şirket ve departmana göre sunucu tarafında filtrelenmiş liste.</p>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Şirket</label>
+                        <select id="admin-job-company-filter"><option value="">— Tümü —</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Departman (ilan)</label>
+                        <input type="text" id="admin-job-dept-filter" maxlength="120" placeholder="İsteğe bağlı">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="admin-load-jobs-btn"><i class="fas fa-sync"></i> İlanları yükle</button>
+                <p class="text-muted" style="font-size:0.8rem;margin:0.5rem 0 0">Satıra tıklayarak ilan ve şirket detayını görün.</p>
+                <div id="admin-jobs-list" style="margin-top:1rem"></div>
+            </div>
+            <div class="card">
+                <h2>Tüm başvurular</h2>
+                <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">İlan veya CV satırına tıklayarak detaya gidebilirsiniz.</p>
+                <div id="admin-applications-list" class="table-scroll-wrap admin-section-anchor"><p class="text-muted">Yükleniyor…</p></div>
+            </div>
+        </section>
+
+        <section id="page-candidate-filter" class="page" data-company-only>
+            <div class="page-header">
+                <h1><i class="fas fa-filter"></i> Gelişmiş Aday Filtreleme</h1>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-search"></i> Filtre Kriterleri</h2>
+                <form id="candidate-filter-form">
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+                        <div class="form-group">
+                            <label>Yetenek</label>
+                            <input type="text" id="filter-skills" class="form-control" placeholder="Yetenek yazın (örn: Python, React...)" list="skill-suggestions">
+                            <datalist id="skill-suggestions">
+                                <!-- Dinamik doldurulacak -->
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Lokasyon (Şehir)</label>
+                            <select id="filter-location">
+                                <option value="">Seçiniz</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+                        <div class="form-group">
+                            <label>Min Deneyim (Yıl)</label>
+                            <input type="number" id="filter-min-exp" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Deneyim (Yıl)</label>
+                            <input type="number" id="filter-max-exp" min="0" placeholder="50">
+                        </div>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+                        <div class="form-group">
+                            <label>Eğitim Seviyesi</label>
+                            <select id="filter-education">
+                                <option value="">Tümü</option>
+                                <option value="Lise">Lise</option>
+                                <option value="Ön Lisans">Ön Lisans</option>
+                                <option value="Lisans">Lisans</option>
+                                <option value="Yüksek Lisans">Yüksek Lisans</option>
+                                <option value="Doktora">Doktora</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mezuniyet Durumu</label>
+                            <select id="filter-graduation">
+                                <option value="">Tümü</option>
+                                <option value="Mezun">Mezun</option>
+                                <option value="Öğrenci">Öğrenci</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Dil</label>
+                        <select id="filter-languages">
+                            <option value="">Seçiniz</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>İş İlanı (İsteğe bağlı)</label>
+                        <select id="filter-job-id">
+                            <option value="">Tüm CV'ler</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filtrele</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-users"></i> Filtrelenen Adaylar</h2>
+                <div id="filtered-candidates-list" class="candidates-grid"></div>
+            </div>
+        </section>
+
+        <section id="page-interview-scheduler" class="page" data-company-only>
+            <div class="page-header">
+                <h1><i class="fas fa-calendar-alt"></i> Mülakat Planlayıcı</h1>
+                <button type="button" class="btn btn-primary" id="open-create-interview-btn"><i class="fas fa-plus"></i> Yeni Mülakat Oluştur</button>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-clock"></i> Bekleyen Yeniden Planlama Talepleri</h2>
+                <div id="reschedule-requests-list" class="interviews-list"></div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-clock"></i> Yaklaşan Mülakatlar</h2>
+                <div id="upcoming-interviews-list" class="interviews-list"></div>
+            </div>
+            <div class="card">
+                <h2><i class="fas fa-list"></i> Tüm Mülakatlar</h2>
+                <div id="all-interviews-list" class="interviews-list"></div>
+            </div>
+        </section>
+
+        <section id="page-application-tracking" class="page" data-employee-only>
+            <div class="page-header">
+                <h1><i class="fas fa-chart-line"></i> Başvuru Takip Paneli</h1>
+            </div>
+            <div id="application-summary" class="summary-section"></div>
+            <div class="card">
+                <h2><i class="fas fa-folder-open"></i> Başvurularım</h2>
+                <div id="tracked-applications-list" class="applications-list"></div>
+            </div>
+        </section>
+
+        <section id="page-employee-interviews" class="page" data-employee-only>
+            <div class="page-header">
+                <h1><i class="fas fa-calendar-alt"></i> Mülakatlarım</h1>
+            </div>
+            <div id="employee-interviews-list" class="interviews-list"></div>
+        </section>
+
+        <!-- Employee Interview Details Modal -->
+        <div id="employee-interview-modal" class="modal hidden">
+            <div class="modal-content modal-content--large">
+                <div class="modal-header">
+                    <h2><i class="fas fa-calendar-check"></i> Mülakat Detayları</h2>
+                    <button type="button" class="modal-close" onclick="closeEmployeeInterviewModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body" id="employee-interview-details">
+                    <!-- Interview details will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Reschedule Request Modal -->
+        <div id="reschedule-request-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-clock"></i> Farklı Zaman Talebi</h2>
+                    <button type="button" class="modal-close" onclick="closeRescheduleModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="reschedule-request-form">
+                        <input type="hidden" id="reschedule-interview-id">
+                        <div class="form-group">
+                            <label>Önerilen Tarih *</label>
+                            <input type="date" id="reschedule-proposed-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Önerilen Saat *</label>
+                            <input type="time" id="reschedule-proposed-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Not (Opsiyonel)</label>
+                            <textarea id="reschedule-notes" rows="3" placeholder="Talebiniz hakkında not ekleyebilirsiniz..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Talep Gönder</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <section id="page-job" class="page">
+            <div class="page-header">
+                <h1>İş İlanları</h1>
+            </div>
+            <p id="job-tenant-context" class="text-muted hidden" style="font-size:0.85rem;margin:-0.35rem 0 1rem"></p>
+            <p id="job-dept-scope-hint" class="info-banner hidden" style="margin:-0.25rem 0 1rem;font-size:0.85rem"></p>
+
+            <div class="card" data-company-hr-only style="display:none">
+                <h2><i class="fas fa-filter"></i> Departman filtresi</h2>
+                <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">Listeyi daraltmak için departman adı yazıp yenileyin.</p>
+                <div class="form-row" style="align-items:flex-end;gap:0.75rem;flex-wrap:wrap">
+                    <div class="form-group" style="margin:0;min-width:12rem;flex:1">
+                        <label>Departman</label>
+                        <input type="text" id="ik-job-server-dept" maxlength="120" placeholder="Örn: Yazılım">
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="ik-job-server-filter-btn"><i class="fas fa-sync"></i> Listeyi yenile</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="ik-job-server-filter-clear">Filtreyi temizle</button>
+                </div>
+            </div>
+
+            <div class="card job-form-card" data-company-hr-only style="display:none">
+                <details class="job-form-collapsible" id="job-form-details">
+                    <summary class="job-form-summary"><span class="job-form-summary-title"><i class="fas fa-plus-circle"></i> Yeni iş ilanı ekle</span></summary>
+                <form id="job-form">
+                    <div class="form-section-label"><i class="fas fa-sitemap"></i> Departman</div>
+                    <div class="form-group">
+                        <label>Departman / ekip *</label>
+                        <input type="text" id="job-department" placeholder="Örn: Muhasebe, Yazılım" maxlength="120" required>
+                    </div>
+                    <div class="form-section-label"><i class="fas fa-briefcase"></i> İlan</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>İş başlığı *</label>
+                            <input type="text" id="job-title" placeholder="Örn: Senior Python Developer" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Şirket</label>
+                            <input type="text" id="job-company" placeholder="Kayıtlı şirket unvanı">
+                            <p id="job-company-hint" class="text-muted hidden" style="font-size:0.75rem;margin:0.35rem 0 0"></p>
+                            <div id="job-company-preview" class="company-profile-block job-form-preview hidden"></div>
+                            <p class="text-muted hidden" id="job-company-preview-link-wrap" style="font-size:0.75rem;margin:0.35rem 0 0">
+                                <a href="#" id="job-company-settings-link">Şirket iletişim bilgilerini Ayarlar’da düzenle</a>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-map-marker-alt"></i> Lokasyon (opsiyonel)</label>
+                            <input type="text" id="job-location" placeholder="Örn: İstanbul, Hibrit ofis" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-laptop-house"></i> Çalışma modeli</label>
+                            <select id="job-workplace-type">
+                                <option value="">Belirtilmedi</option>
+                                <option value="onsite">Ofiste</option>
+                                <option value="remote">Uzaktan</option>
+                                <option value="hybrid">Hibrit</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Açıklama</label>
+                        <textarea id="job-description" rows="5" placeholder="İlan metni (opsiyonel)"></textarea>
+                    </div>
+
+                    <div class="form-divider">
+                        <span>Gereksinimler</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-check-circle text-danger"></i> Zorunlu Beceriler</label>
+                        <div class="tag-input-container" id="required-skills-container">
+                            <div class="tag-list" id="required-skills-tags"></div>
+                            <input type="text" class="tag-input" id="required-skills-input"
+                                   placeholder="Beceri yazıp Enter'a basın (Örn: Python, React, SQL)">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-star text-warning"></i> Tercih Edilen Beceriler</label>
+                        <div class="tag-input-container" id="preferred-skills-container">
+                            <div class="tag-list" id="preferred-skills-tags"></div>
+                            <input type="text" class="tag-input" id="preferred-skills-input"
+                                   placeholder="Beceri yazıp Enter'a basın (Örn: Docker, AWS)">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-graduation-cap"></i> Minimum Eğitim Seviyesi</label>
+                            <select id="job-education">
+                                <option value="">Belirtilmemiş</option>
+                                <option value="Lise">Lise</option>
+                                <option value="Ön Lisans">Ön Lisans</option>
+                                <option value="Lisans">Lisans</option>
+                                <option value="Yüksek Lisans">Yüksek Lisans</option>
+                                <option value="Doktora">Doktora</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-briefcase"></i> Deneyim Seviyesi</label>
+                            <select id="job-experience">
+                                <option value="">Belirtilmemiş</option>
+                                <option value="0">Deneyimsiz / Stajyer</option>
+                                <option value="1">1 Yıl</option>
+                                <option value="2">2 Yıl</option>
+                                <option value="3">3 Yıl</option>
+                                <option value="5">5+ Yıl</option>
+                                <option value="10">10+ Yıl</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-language"></i> Diller</label>
+                        <div class="tag-input-container" id="languages-container">
+                            <div class="tag-list" id="languages-tags"></div>
+                            <input type="text" class="tag-input" id="languages-input"
+                                   placeholder="Dil yazıp Enter'a basın (Örn: İngilizce, Almanca)">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> İlan Ekle
+                    </button>
+                </form>
+                </details>
+            </div>
+
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="job-search" placeholder="İlan ara">
+                <span class="search-count" id="job-search-count"></span>
+            </div>
+
+            <div class="card job-dept-filter-card" data-company-hr-only id="job-dept-filter-wrap" style="display:none;margin-bottom:1rem;padding:0.85rem 1rem">
+                <span class="text-muted" style="font-size:0.8rem;margin-right:0.5rem">Departman:</span>
+                <div class="pill-tabs" id="job-dept-filter-pills"></div>
+            </div>
+
+            <div class="card-grid" id="job-list"></div>
+            <div id="job-list-pagination" class="list-pagination hidden"></div>
+
+            <div id="job-detail" class="detail-panel hidden"></div>
+        </section>
+
+        
+        <section id="page-match" class="page tool-page">
+            <div class="page-header">
+                <h1>Eşleştirme</h1>
+                <p class="page-lead">Bir aday CV’si ile iş ilanını karşılaştırın; uyum skoru ve eksik becerileri görün.</p>
+            </div>
+            <p class="info-banner tool-info-banner"><i class="fas fa-info-circle"></i> Listede yalnızca seçilen ilana başvurmuş adaylar yer alır.</p>
+
+            <div class="card match-setup tool-panel">
+                <div class="match-selectors">
+                    <div class="form-group">
+                        <label><i class="fas fa-file-alt"></i> CV Seçin</label>
+                        <select id="match-cv-select">
+                            <option value="">-- CV Seçin --</option>
+                        </select>
+                    </div>
+                    <div class="match-vs">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-briefcase"></i> İş İlanı Seçin</label>
+                        <select id="match-job-select">
+                            <option value="">-- İş İlanı Seçin --</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="match-btn" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search"></i> Eşleştir
+                </button>
+            </div>
+
+            <div id="match-result" class="hidden"></div>
+        </section>
+
+        
+        <section id="page-compare" class="page tool-page">
+            <div class="page-header">
+                <h1>Karşılaştırma</h1>
+                <p class="page-lead">Aynı ilana başvuran adayları yan yana sıralayın ve kriter bazında kıyaslayın.</p>
+            </div>
+            <p class="info-banner tool-info-banner"><i class="fas fa-info-circle"></i> Karşılaştırma için en az 2 aday seçin. Tablo başlıklarından CV detayına gidebilirsiniz.</p>
+
+            <div class="card tool-panel">
+                <div class="form-group">
+                    <label><i class="fas fa-briefcase"></i> İş İlanı Seçin</label>
+                    <select id="compare-job-select">
+                        <option value="">-- İş İlanı Seçin --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-file-alt"></i> Bu ilana başvuran CV'ler</label>
+                    <div id="compare-cv-checkboxes" class="checkbox-grid"></div>
+                </div>
+                <button id="compare-btn" class="btn btn-primary btn-lg">
+                    <i class="fas fa-balance-scale"></i> Karşılaştır
+                </button>
+            </div>
+
+            <div id="compare-result" class="hidden"></div>
+        </section>
+
+        
+        <section id="page-rag" class="page tool-page">
+            <div class="page-header">
+                <h1>Soru-Cevap</h1>
+                <p class="page-lead">İlana başvuran adaylar hakkında doğal dilde soru sorun; yanıtlar CV kayıtlarından üretilir.</p>
+            </div>
+            <p class="info-banner tool-info-banner"><i class="fas fa-lightbulb"></i> İletişim (e-posta, telefon), deneyim, beceri ve dil sorularını <strong>ayrı ayrı</strong> sorun. Örnek: «İletişim bilgileri neler?»</p>
+            <div class="rag-controls card rag-controls-stack tool-panel">
+                <div class="form-group" id="rag-job-selector">
+                    <label><i class="fas fa-briefcase"></i> İş ilanı</label>
+                    <select id="rag-job-select">
+                        <option value="">-- İlan seçin --</option>
+                    </select>
+                </div>
+                <div class="rag-scope-toggle pill-tabs rag-scope-pills" role="tablist">
+                    <button type="button" class="pill-tab active" id="rag-scope-all" data-rag-scope="all">Tüm başvuranlar</button>
+                    <button type="button" class="pill-tab" id="rag-scope-pick" data-rag-scope="pick">Seçili başvuranlar</button>
+                </div>
+                <div class="form-group hidden" id="rag-cv-multi-selector">
+                    <label><i class="fas fa-user-check"></i> Sorunun kapsayacağı başvuranlar</label>
+                    <div id="rag-cv-checkboxes" class="checkbox-grid rag-cv-checkbox-grid"></div>
+                </div>
+            </div>
+
+            <div class="rag-history-bar" id="rag-history-bar"></div>
+
+            <div class="rag-chat-container card">
+                <div class="rag-chat-messages" id="rag-messages"></div>
+                <div class="rag-chat-input">
+                    <input type="text" id="rag-input" placeholder="Sorunuzu yazın"
+                           onkeydown="if(event.key==='Enter')askRag()">
+                    <button class="btn btn-primary" onclick="askRag()" id="rag-send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-messages" class="page page-messages-fill">
+            <div class="messages-layout card">
+                <aside class="messages-sidebar">
+                    <div class="messages-sidebar-head">
+                        <h2 class="messages-sidebar-title">Mesajlar</h2>
+                        <input type="search" id="messages-conv-search" class="messages-search" placeholder="Kişi ara…" autocomplete="off" aria-label="Sohbet listesinde kişi ara">
+                    </div>
+                    <div id="messages-conv-list" class="messages-conv-list" role="list"></div>
+                </aside>
+                <div class="messages-main">
+                    <header class="messages-thread-header" id="messages-thread-header">
+                        <button type="button" class="btn btn-ghost btn-sm messages-back-btn" id="messages-back-btn" aria-label="Sohbet listesine dön"><i class="fas fa-arrow-left"></i></button>
+                        <div class="messages-thread-head-text">
+                            <span class="messages-thread-title" id="messages-thread-title">Mesajlar</span>
+                            <span class="messages-thread-sub text-muted" id="messages-thread-sub"></span>
+                        </div>
+                        <div class="messages-thread-search-wrap">
+                            <input type="search" id="messages-thread-search" class="messages-thread-search" placeholder="Bu sohbette mesaj ara…" autocomplete="off" aria-label="Sohbette mesaj ara">
+                            <div class="messages-search-nav hidden" id="messages-search-nav">
+                                <button type="button" class="btn btn-ghost btn-xs" id="messages-search-prev" title="Önceki"><i class="fas fa-chevron-up"></i></button>
+                                <span id="messages-search-count" class="text-muted"></span>
+                                <button type="button" class="btn btn-ghost btn-xs" id="messages-search-next" title="Sonraki"><i class="fas fa-chevron-down"></i></button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-ghost btn-sm" id="messages-context-toggle" title="Bilgi paneli" aria-label="Bilgi paneli"><i class="fas fa-circle-info"></i></button>
+                        <button type="button" class="btn btn-ghost btn-sm text-danger" id="messages-delete-conv-btn" title="Sohbeti sil" aria-label="Sohbeti sil"><i class="fas fa-trash"></i></button>
+                    </header>
+                    <div class="messages-body-split">
+                        <div id="messages-thread" class="messages-thread" role="log" aria-live="polite"></div>
+                        <aside id="messages-context-panel" class="messages-context-panel hidden" aria-label="Sohbet bilgileri"></aside>
+                    </div>
+                    <form id="messages-compose-form" class="messages-compose">
+                        <input type="text" id="messages-input" placeholder="Mesajınızı yazın…" maxlength="4000" autocomplete="off">
+                        <button type="submit" class="btn btn-primary" id="messages-send-btn" title="Gönder"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+
+    </main>
+</div>
+
+<div id="detail-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-panel card">
+        <div class="modal-header">
+            <h2 id="detail-modal-title">Detay</h2>
+            <button type="button" class="btn btn-ghost btn-sm modal-close-btn" data-modal-close aria-label="Kapat"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="detail-modal-body" class="modal-body"></div>
+    </div>
+</div>
+
+<div id="camera-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-camera-close></div>
+    <div class="modal-panel card camera-modal-panel">
+        <h2>Profil fotoğrafı</h2>
+        <p class="text-muted camera-permission-hint" id="camera-permission-hint">Kamera kullanımı için izin vermeniz gerekir.</p>
+        <video id="camera-preview" class="camera-preview" autoplay playsinline muted></video>
+        <canvas id="camera-canvas" class="hidden"></canvas>
+        <div class="camera-modal-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="camera-capture-btn" disabled><i class="fas fa-camera"></i> Fotoğraf çek</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-camera-close>İptal</button>
+        </div>
+    </div>
+</div>
+
+<div id="bulk-email-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-panel card bulk-email-modal-panel">
+        <div class="modal-header">
+            <h2>Toplu E-posta Gönder</h2>
+            <button type="button" class="btn btn-ghost btn-sm modal-close-btn bulk-email-close" aria-label="Kapat"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>İlan</label>
+                <p id="bulk-email-job-title" class="text-muted"></p>
+            </div>
+            <div class="form-group">
+                <label for="bulk-email-filter">Alıcılar</label>
+                <select id="bulk-email-filter" class="form-control">
+                    <option value="all">Tüm başvurular</option>
+                    <option value="favorites">Sadece favoriler</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="bulk-email-subject">Konu *</label>
+                <input type="text" id="bulk-email-subject" class="form-control" placeholder="E-posta konusu" maxlength="200">
+            </div>
+            <div class="form-group">
+                <label for="bulk-email-body">İçerik *</label>
+                <textarea id="bulk-email-body" class="form-control" rows="8" placeholder="E-posta içeriği..." maxlength="10000"></textarea>
+            </div>
+            <div id="bulk-email-variable-hints" class="bulk-email-hints"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary bulk-email-close">İptal</button>
+            <button type="button" class="btn btn-primary" id="bulk-email-send-btn"><i class="fas fa-paper-plane"></i> Gönder</button>
+        </div>
+    </div>
+</div>
+
+<div id="cv-edit-modal" class="modal hidden" role="dialog" aria-modal="true">
+</div>
+
+<div id="interview-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-panel card">
+        <div class="modal-header">
+            <h2>Yeni Mülakat Oluştur</h2>
+            <button type="button" class="btn btn-ghost btn-sm modal-close-btn" onclick="closeInterviewModal()" aria-label="Kapat"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="interview-job-select">İş İlanı *</label>
+                <select id="interview-job-select" class="form-control" required>
+                    <option value="">-- İlan Seçin --</option>
+                </select>
+            </div>
+            <div class="form-group" id="interview-applicant-group" style="display:none">
+                <label for="interview-applicant-select">Başvuran *</label>
+                <select id="interview-applicant-select" class="form-control" required>
+                    <option value="">-- Başvuran Seçin --</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="interview-date">Tarih *</label>
+                    <input type="date" id="interview-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="interview-time">Saat *</label>
+                    <input type="time" id="interview-time" class="form-control" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="interview-type">Mülakat Türü *</label>
+                <select id="interview-type" class="form-control" required>
+                    <option value="technical">Teknik Mülakat</option>
+                    <option value="hr">İK Mülakatı</option>
+                    <option value="final">Final Mülakat</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="interview-duration">Süre (dakika)</label>
+                <input type="number" id="interview-duration" class="form-control" value="60" min="15" max="180">
+            </div>
+            <div class="form-group">
+                <label for="interview-location">Konum / Link</label>
+                <input type="text" id="interview-location" class="form-control" placeholder="Ofis adresi veya online toplantı linki">
+            </div>
+            <div class="form-group">
+                <label for="interview-meeting-link">Toplantı Linki</label>
+                <input type="text" id="interview-meeting-link" class="form-control" placeholder="Zoom/Teams linki (opsiyonel)">
+            </div>
+            <div class="form-group">
+                <label for="interview-notes">Notlar</label>
+                <textarea id="interview-notes" class="form-control" rows="3" placeholder="Mülakat hakkında notlar..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeInterviewModal()">İptal</button>
+            <button type="button" class="btn btn-primary" id="interview-create-btn"><i class="fas fa-calendar-plus"></i> Oluştur</button>
+        </div>
+    </div>
+</div>
+
+<div id="edit-interview-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-panel card">
+        <div class="modal-header">
+            <h2>Mülakatı Düzenle</h2>
+            <button type="button" class="btn btn-ghost btn-sm modal-close-btn" data-modal-close aria-label="Kapat"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="edit-interview-id">
+            <div class="form-group">
+                <label for="edit-interview-date">Tarih *</label>
+                <input type="date" id="edit-interview-date" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-interview-time">Saat *</label>
+                <input type="time" id="edit-interview-time" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-interview-duration">Süre (dakika) *</label>
+                <input type="number" id="edit-interview-duration" class="form-control" required min="15" step="15">
+            </div>
+            <div class="form-group">
+                <label for="edit-interview-type">Mülakat Türü *</label>
+                <select id="edit-interview-type" class="form-control" required>
+                    <option value="technical">Teknik Mülakat</option>
+                    <option value="hr">İK Mülakatı</option>
+                    <option value="final">Final Mülakat</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-interview-location">Konum / Link</label>
+                <input type="text" id="edit-interview-location" class="form-control" placeholder="Ofis adresi veya online toplantı linki">
+            </div>
+            <div class="form-group">
+                <label for="edit-interview-meeting-link">Toplantı Linki</label>
+                <input type="text" id="edit-interview-meeting-link" class="form-control" placeholder="https://meet.google.com/...">
+            </div>
+            <div class="form-group">
+                <label for="edit-interview-notes">Notlar</label>
+                <textarea id="edit-interview-notes" class="form-control" rows="3" placeholder="Mülakat hakkında notlar..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="edit-interview-status">Durum</label>
+                <select id="edit-interview-status" class="form-control">
+                    <option value="scheduled">Planlandı</option>
+                    <option value="completed">Tamamlandı</option>
+                    <option value="cancelled">İptal Edildi</option>
+                    <option value="rescheduled">Yeniden Planlandı</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>İptal</button>
+            <button type="button" class="btn btn-primary" id="edit-interview-save-btn"><i class="fas fa-save"></i> Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<div id="application-detail-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-panel card">
+        <div class="modal-header">
+            <h2>Başvuru Detayı</h2>
+            <button type="button" class="btn btn-ghost btn-sm" id="close-application-detail-modal" aria-label="Kapat"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="application-detail-content" class="modal-body"></div>
+    </div>
+</div>
+
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<div id="loading" class="hidden" role="status" aria-live="polite" aria-busy="false" aria-hidden="true">
+    <div class="spinner"></div>
+    <p class="loading-sr-text">İşlem sürüyor…</p>
+</div>
+
+    <!-- CVMatch modüler JS (sıra önemli — js/modules/manifest.txt) -->
+    <script src="js/modules/00-state.js"></script>
+    <script src="js/modules/10-core-theme.js"></script>
+    <script src="js/modules/15-utils.js"></script>
+    <script src="js/modules/20-core-company.js"></script>
+    <script src="js/modules/30-core-auth.js"></script>
+    <script src="js/modules/40-core-api.js"></script>
+    <script src="js/modules/50-ui-feedback.js"></script>
+    <script src="js/modules/55-ui-modals.js"></script>
+    <script src="js/modules/60-notifications.js"></script>
+    <script src="js/modules/65-settings-ui.js"></script>
+    <script src="js/modules/70-messages.js"></script>
+    <script src="js/modules/81-employee.js"></script>
+    <script src="js/modules/95-settings-accordion.js"></script>
+    <script src="js/modules/82-settings.js"></script>
+    <script src="js/modules/83-jobs-employee.js"></script>
+    <script src="js/modules/84-applicants-admin.js"></script>
+    <script src="js/modules/86-register-ui.js"></script>
+    <script src="js/modules/85-auth-session.js"></script>
+    <script src="js/modules/86-dashboard.js"></script>
+    <script src="js/modules/87-cv.js"></script>
+    <script src="js/modules/88-jobs-company.js"></script>
+    <script src="js/modules/89-jobs-detail.js"></script>
+    <script src="js/modules/90-match.js"></script>
+    <script src="js/modules/91-compare.js"></script>
+    <script src="js/modules/92-rag.js"></script>
+    <script src="js/modules/93-activity-kvkk.js"></script>
+    <script src="js/modules/94-router.js"></script>
+    <script src="js/modules/97-bulk-email.js"></script>
+    <script src="js/modules/100-candidate-filter.js"></script>
+    <script src="js/modules/102-interview-scheduler.js"></script>
+    <script src="js/modules/103-application-tracking.js"></script>
+    <script src="js/modules/104-employee-interviews.js"></script>
+    <script src="js/modules/98-globals.js"></script>
+    <script src="js/modules/99-init.js"></script>
+</body>
+</html>

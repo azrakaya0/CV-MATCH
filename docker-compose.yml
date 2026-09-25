@@ -1,0 +1,39 @@
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - cvmatch_mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URL: mongodb://mongodb:27017
+      DATABASE_NAME: cvmatch_db
+      ENVIRONMENT: production
+      SEED_DEMO_USERS: "false"
+      CORS_ORIGINS: http://localhost:8000
+    env_file:
+      - backend/.env
+    depends_on:
+      - mongodb
+    volumes:
+      - cvmatch_uploads:/app/backend/uploads
+      - cvmatch_avatars:/app/backend/static/uploads
+
+volumes:
+  cvmatch_mongo_data:
+  cvmatch_uploads:
+  cvmatch_avatars:
